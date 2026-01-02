@@ -4,6 +4,7 @@ import moment from "moment";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -53,6 +54,29 @@ export default function AssignmentDetails() {
       setLoading(false);
     }
   };
+  
+  const deleteAssignment = async () => {
+  Alert.alert(
+    "Delete Assignment",
+    "Are you sure you want to delete this assignment?",
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          await supabase
+            .from("assignments")
+            .delete()
+            .eq("id", assignmentId);
+
+          router.back(); // go back to subject page
+        }
+      }
+    ]
+  );
+};
+
 
   if (loading) {
     return (
@@ -74,14 +98,19 @@ export default function AssignmentDetails() {
     <SafeAreaView style={[styles.container, { backgroundColor: COLORS.bg }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: COLORS.text }]}>
-          Assignment
-        </Text>
-        <View style={{ width: 24 }} />
-      </View>
+  <TouchableOpacity onPress={() => router.back()}>
+    <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+  </TouchableOpacity>
+
+  <Text style={[styles.headerTitle, { color: COLORS.text }]}>
+    Assignment
+  </Text>
+
+  <TouchableOpacity onPress={deleteAssignment}>
+    <Ionicons name="trash-outline" size={22} color="#ef4444" />
+  </TouchableOpacity>
+</View>
+
 
       {/* Assignment Card */}
       <View
@@ -107,7 +136,7 @@ export default function AssignmentDetails() {
           style={[styles.actionBtn, { backgroundColor: COLORS.primary }]}
           onPress={() =>
             router.push({
-              pathname: "/assignments/mark-submissions",
+              pathname: "/(tabs)/assignments/mark-submissions",
               params: { assignmentId }
             } as any)
           }
@@ -120,7 +149,7 @@ export default function AssignmentDetails() {
           style={[styles.actionBtn, { backgroundColor: COLORS.card }]}
           onPress={() =>
             router.push({
-              pathname: "/assignments/view-submissions",
+              pathname: "/(tabs)/assignments/view-submissions",
               params: { assignmentId }
             } as any)
           }

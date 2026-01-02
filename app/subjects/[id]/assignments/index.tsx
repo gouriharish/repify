@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   SafeAreaView,
   StyleSheet,
@@ -15,16 +16,17 @@ import { useTheme } from "../../../context/ThemeContext";
 
 export default function SubjectPage() {
   const router = useRouter();
-  const { subjectId } = useLocalSearchParams<{ subjectId: string }>();
+  const { id: subjectId } = useLocalSearchParams<{ id: string }>();
   const { COLORS } = useTheme();
-
   const [subject, setSubject] = useState<any>(null);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+ useFocusEffect(
+  useCallback(() => {
     if (subjectId) load();
-  }, [subjectId]);
+  }, [subjectId])
+);
 
   const load = async () => {
     try {
@@ -52,10 +54,24 @@ export default function SubjectPage() {
     }
   };
 
-  const deleteAssignment = async (id: string) => {
-    await supabase.from("assignments").delete().eq("id", id);
-    load();
-  };
+ const deleteAssignment = async (id: string) => {
+  Alert.alert(
+    "Delete Assignment",
+    "Are you sure?",
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          await supabase.from("assignments").delete().eq("id", id);
+          load();
+        }
+      }
+    ]
+  );
+};
+
 
   if (loading) {
     return (
@@ -80,7 +96,7 @@ export default function SubjectPage() {
         <TouchableOpacity
           onPress={() =>
             router.push({
-              pathname: "../add-assignment",
+              pathname: "/add-assignment",
               params: { subjectId }
             })
           }
@@ -107,7 +123,7 @@ export default function SubjectPage() {
             ]}
             onPress={() =>
               router.push({
-                pathname: "../(tabs)/assignments/assignment-details",
+                pathname: "/(tabs)/assignments/assignment-details",
                 params: { assignmentId: item.id }
               })
             }

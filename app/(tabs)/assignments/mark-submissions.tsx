@@ -2,13 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { supabase } from "../../../lib/supabase";
 import { useTheme } from "../../context/ThemeContext";
@@ -64,14 +64,21 @@ export default function MarkSubmissions() {
     }));
 
     await supabase
-      .from("submissions")
-      .upsert({
-        student_id: studentId,
-        assignment_id: assignmentId,
-        submitted: next,
-        submission_date: next ? new Date().toISOString() : null
-      });
+  .from("submissions")
+  .upsert(
+    {
+      student_id: studentId,
+      assignment_id: assignmentId,
+      submitted: next,
+      submission_date: next ? new Date().toISOString() : null
+    },
+    {
+      onConflict: "student_id,assignment_id"
+    }
+  );
+
   };
+
 
   if (loading) {
     return (
