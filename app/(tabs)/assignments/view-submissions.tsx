@@ -2,13 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { supabase } from "../../../lib/supabase";
 import { useTheme } from "../../context/ThemeContext";
@@ -28,13 +28,11 @@ export default function ViewSubmissions() {
 
   const load = async () => {
     try {
-      // Fetch all students
       const { data: students } = await supabase
         .from("students")
         .select("*")
         .order("roll_no");
 
-      // Fetch submissions for this assignment
       const { data: submissions } = await supabase
         .from("submissions")
         .select("student_id, submitted")
@@ -101,45 +99,62 @@ export default function ViewSubmissions() {
         <View style={{ width: 24 }} />
       </View>
 
-      {/* Submitted */}
-      <Text style={[styles.sectionTitle, { color: "#22c55e" }]}>
-        Submitted ({submitted.length})
-      </Text>
+      {/* BODY */}
+      <View style={styles.body}>
 
-      {submitted.length === 0 ? (
-        <Text style={[styles.emptyText, { color: COLORS.muted }]}>
-          No submissions yet
-        </Text>
-      ) : (
-        <FlatList
-          data={submitted}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => renderStudent(item)}
-        />
-      )}
+        {/* Submitted Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: "#22c55e" }]}>
+            Submitted ({submitted.length})
+          </Text>
 
-      {/* Not Submitted */}
-      <Text style={[styles.sectionTitle, { color: "#ef4444", marginTop: 20 }]}>
-        Not Submitted ({notSubmitted.length})
-      </Text>
+          {submitted.length === 0 ? (
+            <Text style={[styles.emptyText, { color: COLORS.muted }]}>
+              No submissions yet
+            </Text>
+          ) : (
+            <FlatList
+              data={submitted}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => renderStudent(item)}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator
+            />
+          )}
+        </View>
 
-      {notSubmitted.length === 0 ? (
-        <Text style={[styles.emptyText, { color: COLORS.muted }]}>
-          Everyone has submitted 🎉
-        </Text>
-      ) : (
-        <FlatList
-          data={notSubmitted}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => renderStudent(item)}
-        />
-      )}
+        {/* Not Submitted Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: "#ef4444" }]}>
+            Not Submitted ({notSubmitted.length})
+          </Text>
+
+          {notSubmitted.length === 0 ? (
+            <Text style={[styles.emptyText, { color: COLORS.muted }]}>
+              Everyone has submitted 🎉
+            </Text>
+          ) : (
+            <FlatList
+              data={notSubmitted}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => renderStudent(item)}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator
+            />
+          )}
+        </View>
+
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 12
+  },
 
   center: {
     flex: 1,
@@ -148,31 +163,41 @@ const styles = StyleSheet.create({
   },
 
   header: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  paddingHorizontal: 20,
-  paddingBottom: 20,
-  paddingTop: 50,   // 👈 space at top for notch / status bar
-},
-
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12
+  },
 
   headerTitle: {
     fontSize: 18,
     fontWeight: "700"
   },
 
+  body: {
+    flex: 1,
+    gap: 12
+  },
+
+  section: {
+    flex: 1
+  },
+
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    marginBottom: 10
+    marginBottom: 8
+  },
+
+  listContent: {
+    paddingBottom: 8
   },
 
   row: {
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
-    marginBottom: 10
+    marginBottom: 12
   },
 
   name: {
@@ -187,6 +212,6 @@ const styles = StyleSheet.create({
 
   emptyText: {
     textAlign: "center",
-    marginBottom: 10
+    marginTop: 12
   }
 });
