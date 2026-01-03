@@ -1,33 +1,55 @@
 import { router } from "expo-router";
+import { Moon, Sun } from "lucide-react-native";
 import { useState } from "react";
 import {
+  ActivityIndicator,
+  Animated,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
-  Pressable,
-  Animated,
-  SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView
+  View
 } from "react-native";
-import { Sun, Moon } from "lucide-react-native";
 import { supabase } from "../lib/supabase";
 import { useTheme } from "./context/ThemeContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  
-  // Pulling global state and colors
+  const [loading, setLoading] = useState(false);
+
+  // Theme context
   const { dark, toggleTheme, anim, COLORS } = useTheme();
 
   const handleLogin = async () => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return alert(error.message);
-    router.replace("/(tabs)/home");
+    if (!email || !password) {
+      alert("Please enter email and password");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password
+      });
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      // For now, allow everyone to enter home (CR restriction comes later)
+      router.replace("/(tabs)/home");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const styles = StyleSheet.create({
@@ -41,7 +63,7 @@ export default function Login() {
       fontSize: 34,
       color: COLORS.text,
       fontWeight: "800",
-      letterSpacing: -1,
+      letterSpacing: -1
     },
     sub: {
       color: COLORS.muted,
@@ -58,7 +80,8 @@ export default function Login() {
       borderColor: COLORS.border
     },
     btn: {
-      backgroundColor: COLORS.accent,
+      backgroundColor: "#22C55E",   // green only for login
+
       padding: 18,
       borderRadius: 14,
       marginTop: 6,
@@ -66,7 +89,8 @@ export default function Login() {
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.2,
       shadowRadius: 8,
-      elevation: 4
+      elevation: 4,
+      opacity: loading ? 0.7 : 1
     },
     btnText: {
       color: dark ? "#052E16" : "#FFFFFF",
@@ -106,13 +130,13 @@ export default function Login() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"} 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.container}>
           
-          {/* Global Theme Toggle */}
+          {/* Theme Toggle */}
           <View style={styles.toggleBox}>
             <Pressable onPress={toggleTheme}>
               <View style={styles.toggleTrack}>
@@ -120,19 +144,22 @@ export default function Login() {
                   style={[
                     styles.toggleThumb,
                     {
-                      transform: [{
-                        translateX: anim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0, 22]
-                        })
-                      }]
+                      transform: [
+                        {
+                          translateX: anim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0, 22]
+                          })
+                        }
+                      ]
                     }
                   ]}
                 >
-                  {dark ? 
-                    <Moon size={12} color="#052E16" fill="#052E16" /> : 
+                  {dark ? (
+                    <Moon size={12} color="#052E16" fill="#052E16" />
+                  ) : (
                     <Sun size={12} color="#FFFFFF" />
-                  }
+                  )}
                 </Animated.View>
               </View>
             </Pressable>
@@ -148,6 +175,7 @@ export default function Login() {
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
+            keyboardType="email-address"
           />
 
           <TextInput
@@ -159,11 +187,23 @@ export default function Login() {
             onChangeText={setPassword}
           />
 
-          <TouchableOpacity style={styles.btn} onPress={handleLogin} activeOpacity={0.8}>
-            <Text style={styles.btnText}>LOGIN</Text>
+          <TouchableOpacity
+            style={styles.btn}
+            onPress={handleLogin}
+            activeOpacity={0.8}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color={dark ? "#052E16" : "#FFFFFF"} />
+            ) : (
+              <Text style={styles.btnText}>LOGIN</Text>
+            )}
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.link} onPress={() => router.push("/signup")}>
+          <TouchableOpacity
+            style={styles.link}
+            onPress={() => router.push("/signup")}
+          >
             <Text style={styles.linkText}>New user? Create Account</Text>
           </TouchableOpacity>
 

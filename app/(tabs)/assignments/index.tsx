@@ -11,9 +11,9 @@ export default function AssignmentsScreen() {
   const [loading, setLoading] = useState(true);
   const [activeSemester, setActiveSemester] = useState<any>(null);
 
-  // Function to pull data from Supabase
   const loadData = async () => {
     setLoading(true);
+    // 1. Always find the currently active semester first
     const { data: sem } = await supabase
       .from("semesters")
       .select("*")
@@ -28,6 +28,7 @@ export default function AssignmentsScreen() {
       return;
     }
 
+    // 2. Fetch assignments ONLY for that active semester
     const { data, error } = await supabase
       .from("assignments")
       .select("*")
@@ -38,9 +39,6 @@ export default function AssignmentsScreen() {
     setLoading(false);
   };
 
-  // 🔁 THIS IS THE CRITICAL PART: 
-  // It triggers every time the user clicks the "Assignments" tab
-  // or navigates back from the "Details" screen.
   useFocusEffect(
     useCallback(() => {
       loadData();
@@ -48,9 +46,9 @@ export default function AssignmentsScreen() {
   );
 
   const renderItem = ({ item }: any) => {
-    const today = new Date();
-    const due = new Date(item.due_date);
-    const isOverdue = due < today;
+    const today = moment().startOf('day');
+    const due = moment(item.due_date);
+    const isOverdue = due.isBefore(today);
 
     return (
       <TouchableOpacity
@@ -63,7 +61,7 @@ export default function AssignmentsScreen() {
         </View>
         <Text style={styles.sub}>📘 {item.subject}</Text>
         <Text style={styles.date}>
-          <Ionicons name="calendar-outline" size={14} color="#6366f1" /> Due: {moment(item.due_date).format("DD MMM, YYYY")}
+          <Ionicons name="calendar-outline" size={14} color="#6366f1" /> Due: {due.format("DD MMM, YYYY")}
         </Text>
       </TouchableOpacity>
     );
@@ -72,7 +70,10 @@ export default function AssignmentsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerRow}>
-        <Text style={styles.header}>Assignments</Text>
+        <View>
+            <Text style={styles.header}>Assignments</Text>
+            <Text style={styles.semSubtext}>Viewing: {activeSemester?.name || "No Active Sem"}</Text>
+        </View>
         <TouchableOpacity onPress={() => router.push("/add-assignment")} style={styles.addBtn}>
           <Ionicons name="add" size={20} color="#fff" />
           <Text style={styles.addBtnText}>Add</Text>
@@ -80,10 +81,11 @@ export default function AssignmentsScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#4F46E5" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color="#6366f1" style={{ marginTop: 40 }} />
       ) : assignments.length === 0 ? (
         <View style={styles.center}>
-          <Text style={styles.empty}>No assignments yet 📭</Text>
+          <Ionicons name="document-text-outline" size={60} color="#cbd5e1" />
+          <Text style={styles.empty}>No assignments for {activeSemester?.name || "this semester"} 📭</Text>
         </View>
       ) : (
         <FlatList
@@ -101,17 +103,18 @@ export default function AssignmentsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f8fafc" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 20 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", paddingBottom: 100 },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 20, marginBottom: 10 },
   header: { fontSize: 28, fontWeight: "bold", color: "#1e293b" },
-  addBtn: { backgroundColor: "#4F46E5", flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
+  semSubtext: { fontSize: 13, color: "#6366f1", fontWeight: "600" },
+  addBtn: { backgroundColor: "#6366f1", flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, elevation: 2 },
   addBtnText: { color: "#fff", fontWeight: "bold", marginLeft: 4 },
-  card: { backgroundColor: "#fff", padding: 16, borderRadius: 16, marginBottom: 14, elevation: 2, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 10 },
+  card: { backgroundColor: "#fff", padding: 18, borderRadius: 16, marginBottom: 14, elevation: 2, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 10 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   overdueBorder: { borderLeftWidth: 5, borderLeftColor: "#ef4444" },
   overdueBadge: { color: "#ef4444", fontSize: 10, fontWeight: "bold" },
   title: { fontSize: 18, fontWeight: "700", color: "#1e293b" },
   sub: { fontSize: 14, color: "#64748b", marginTop: 4 },
   date: { marginTop: 10, fontWeight: "600", color: "#6366f1" },
-  empty: { textAlign: "center", fontSize: 16, color: "#94a3b8", marginTop: 40 },
+  empty: { textAlign: "center", fontSize: 16, color: "#94a3b8", marginTop: 20 },
 });

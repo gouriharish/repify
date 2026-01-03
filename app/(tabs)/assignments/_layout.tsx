@@ -3,21 +3,29 @@ import { Stack } from "expo-router";
 export default function AssignmentsLayout() {
   return (
     <Stack>
-      {/* This is the main list */}
       <Stack.Screen 
         name="index" 
-        options={{ title: "Assignments", headerShown: false }} 
+        options={{ headerShown: false }} 
       />
-      {/* This is the details page */}
+
       <Stack.Screen 
         name="assignment-details" 
-        options={{ title: "Details", headerBackTitle: "Back" }} 
+        options={{ headerShown: false }} 
       />
-      {/* This is the edit page */}
+<Stack.Screen 
+        name="view-submissions" 
+        options={{ headerShown: false }} 
+      />
       <Stack.Screen 
         name="edit" 
-        options={{ title: "Edit Assignment", presentation: 'modal' }} 
+        options={{ presentation: "modal", headerShown: false }} 
+      />
+
+      <Stack.Screen
+        name="mark-submissions"
+        options={{ headerShown: false }}
       />
     </Stack>
+    
   );
 }

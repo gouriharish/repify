@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -9,14 +9,14 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { supabase } from "../../lib/supabase";
 import { useTheme } from "../context/ThemeContext";
 
 export default function Home() {
   const router = useRouter();
-  const { dark, COLORS } = useTheme();
+  const { COLORS } = useTheme();
 
   const [profile, setProfile] = useState<any>(null);
   const [semester, setSemester] = useState<any>(null);
@@ -26,155 +26,248 @@ export default function Home() {
 
   const loadData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      setLoading(true);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) return;
 
+      // 1️⃣ Profile + active semester id
       const { data: prof } = await supabase
         .from("profiles")
-        .select("*")
+        .select("name, semester_id")
         .eq("id", user.id)
         .single();
 
+      setProfile(prof);
+
+      if (!prof?.semester_id) {
+        setSemester(null);
+        setSubjects([]);
+        return;
+      }
+
+      // 2️⃣ Semester info
       const { data: sem } = await supabase
         .from("semesters")
         .select("*")
-        .eq("is_active", true)
-        .maybeSingle();
+        .eq("id", prof.semester_id)
+        .single();
 
+      setSemester(sem);
+
+      // 3️⃣ Subjects
       const { data: subs } = await supabase
         .from("subjects")
-        .select("id,name,semester_id")
-        .eq("semester_id", sem?.id);
+        .select("*")
+        .eq("semester_id", prof.semester_id)
+        .order("name");
 
-      setProfile(prof);
-      setSemester(sem);
       setSubjects(subs ?? []);
+    } catch (err) {
+      console.error("Home load error:", err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => { loadData(); }, []);
+  // ✅ reload whenever Home gains focus
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     loadData();
   }, []);
 
-  const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.bg },
-    center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: COLORS.bg },
-    scrollContent: { padding: 20 },
-
-    header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 20, marginBottom: 30 },
-    greeting: { fontSize: 16, color: COLORS.muted },
-    userName: { fontSize: 28, fontWeight: "bold", color: COLORS.text },
-
-    profileCircle: {
-      width: 48,
-      height: 48,
-      borderRadius: 24,
-      backgroundColor: COLORS.card,
-      justifyContent: "center",
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: COLORS.border
-    },
-
-    statCard: {
-      backgroundColor: COLORS.card,
-      padding: 20,
-      borderRadius: 20,
-      flexDirection: "row",
-      justifyContent: "space-between",
-      marginBottom: 30,
-      borderWidth: 1,
-      borderColor: COLORS.border
-    },
-
-    statLabel: { fontSize: 14, color: COLORS.muted },
-    statValue: { fontSize: 20, fontWeight: "bold", color: COLORS.text },
-
-    sectionTitle: { fontSize: 18, fontWeight: "700", color: COLORS.text, marginBottom: 15 },
-
-    actionGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
-
-    actionCard: {
-      width: "47%",
-      height: 120,
-      backgroundColor: COLORS.card,
-      borderRadius: 20,
-      padding: 15,
-      justifyContent: "center",
-      alignItems: "center",
-      marginBottom: 20,
-      borderWidth: 1,
-      borderColor: COLORS.border
-    },
-
-    iconCircle: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
-      justifyContent: "center",
-      alignItems: "center",
-      marginBottom: 8
-    },
-
-    actionText: { color: COLORS.text, fontWeight: "600", fontSize: 14 }
-  });
-
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View style={[styles.center, { backgroundColor: COLORS.bg }]}>
         <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: COLORS.bg }]}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.primary}
+          />
+        }
       >
+        {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Welcome back,</Text>
-            <Text style={styles.userName}>{profile?.name ?? "CR"}</Text>
+            <Text style={[styles.greeting, { color: COLORS.muted }]}>
+              Welcome back,
+            </Text>
+            <Text style={[styles.name, { color: COLORS.text }]}>
+              {profile?.name ?? "CR"}
+            </Text>
           </View>
 
-          <TouchableOpacity style={styles.profileCircle} onPress={() => router.push("/profile")}>
-            <Ionicons name="person" size={24} color={COLORS.primary} />
-          </TouchableOpacity>
+         <TouchableOpacity
+  style={[
+    styles.iconBtn,
+    { backgroundColor: COLORS.card, borderColor: COLORS.border },
+  ]}
+  onPress={() => router.push("/profile")}
+>
+  <Ionicons
+    name="person-outline"
+    size={22}
+    color={COLORS.primary}
+  />
+</TouchableOpacity>
+
         </View>
 
-        <View style={styles.statCard}>
+        {/* Semester */}
+        <View
+          style={[
+            styles.semCard,
+            { backgroundColor: COLORS.card, borderColor: COLORS.border },
+          ]}
+        >
           <View>
-            <Text style={styles.statLabel}>Current Semester</Text>
-            <Text style={styles.statValue}>{semester?.name ?? "None Active"}</Text>
+            <Text style={[styles.semLabel, { color: COLORS.muted }]}>
+              Current Semester
+            </Text>
+            <Text style={[styles.semValue, { color: COLORS.text }]}>
+              {semester?.name ?? "No Active Semester"}
+            </Text>
           </View>
           <Ionicons name="school-outline" size={28} color={COLORS.primary} />
         </View>
 
-        <Text style={styles.sectionTitle}>Subjects</Text>
+        {/* Subjects */}
+        <Text style={[styles.section, { color: COLORS.text }]}>Subjects</Text>
 
-        <View style={styles.actionGrid}>
-          {subjects.map(sub => (
-            <TouchableOpacity
-              key={sub.id}
-              style={styles.actionCard}
-              onPress={() => router.push(`/subject/${sub.id}`)}
-            >
-              <View style={[styles.iconCircle, { backgroundColor: "rgba(56,189,248,0.15)" }]}>
-                <Ionicons name="book-outline" size={22} color={COLORS.primary} />
-              </View>
-              <Text style={styles.actionText}>{sub.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {subjects.length === 0 ? (
+          <Text style={[styles.emptyText, { color: COLORS.muted }]}>
+            {semester
+              ? "No subjects added for this semester"
+              : "Activate a semester to see subjects"}
+          </Text>
+        ) : (
+          <View style={styles.grid}>
+            {subjects.map((sub) => (
+              <TouchableOpacity
+                key={sub.id}
+                style={[
+                  styles.subjectCard,
+                  { backgroundColor: COLORS.card, borderColor: COLORS.border },
+                ]}
+                onPress={() =>
+                  router.push({
+                    pathname: "/subjects/[id]/assignments",
+                    params: { id: sub.id },
+                  })
+                }
+              >
+                <View style={styles.subjectIcon}>
+                  <Ionicons name="book-outline" size={22} color="#6366f1" />
+                </View>
+                <Text
+                  style={[styles.subjectText, { color: COLORS.text }]}
+                >
+                  {sub.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  scroll: { padding: 20 },
+
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 30,
+  },
+  greeting: { fontSize: 16 },
+  name: { fontSize: 28, fontWeight: "bold" },
+
+  iconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+  },
+
+  semCard: {
+    padding: 20,
+    borderRadius: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 25,
+    borderWidth: 1,
+  },
+  semLabel: { fontSize: 14 },
+  semValue: { fontSize: 20, fontWeight: "bold" },
+
+  section: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 15,
+  },
+
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+
+  subjectCard: {
+    width: "47%",
+    height: 110,
+    borderRadius: 18,
+    padding: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 18,
+    borderWidth: 1,
+  },
+
+  subjectIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+    backgroundColor: "rgba(99,102,241,0.15)",
+  },
+
+  subjectText: {
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+
+  emptyText: {
+    textAlign: "center",
+    marginTop: 20,
+  },
+});
