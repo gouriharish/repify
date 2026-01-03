@@ -4,12 +4,11 @@ import moment from "moment";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { supabase } from "../../../lib/supabase";
 import { useTheme } from "../../context/ThemeContext";
@@ -22,6 +21,11 @@ export default function AssignmentDetails() {
   const [assignment, setAssignment] = useState<any>(null);
   const [subject, setSubject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [dialog, setDialog] = useState<{
+    title: string;
+    message: string;
+    action?: () => void;
+  } | null>(null);
 
   useEffect(() => {
     if (assignmentId) load();
@@ -29,7 +33,6 @@ export default function AssignmentDetails() {
 
   const load = async () => {
     try {
-      // Fetch assignment + subject
       const { data } = await supabase
         .from("assignments")
         .select(`
@@ -54,29 +57,18 @@ export default function AssignmentDetails() {
       setLoading(false);
     }
   };
-  
-  const deleteAssignment = async () => {
-  Alert.alert(
-    "Delete Assignment",
-    "Are you sure you want to delete this assignment?",
-    [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          await supabase
-            .from("assignments")
-            .delete()
-            .eq("id", assignmentId);
 
-          router.back(); // go back to subject page
-        }
-      }
-    ]
-  );
-};
-
+  const deleteAssignment = () => {
+    setDialog({
+      title: "Delete Assignment",
+      message: "Are you sure you want to delete this assignment?",
+      action: async () => {
+        await supabase.from("assignments").delete().eq("id", assignmentId);
+        setDialog(null);
+        router.back();
+      },
+    });
+  };
 
   if (loading) {
     return (
@@ -96,48 +88,46 @@ export default function AssignmentDetails() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: COLORS.bg }]}>
-      {/* Header */}
       <View style={styles.header}>
-  <TouchableOpacity onPress={() => router.back()}>
-    <Ionicons name="arrow-back" size={24} color={COLORS.text} />
-  </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+        </TouchableOpacity>
 
-  <Text style={[styles.headerTitle, { color: COLORS.text }]}>
-    Assignment
-  </Text>
+        <Text style={[styles.headerTitle, { color: COLORS.text }]}>
+          Assignment
+        </Text>
 
-  <TouchableOpacity onPress={deleteAssignment}>
-    <Ionicons name="trash-outline" size={22} color="#ef4444" />
-  </TouchableOpacity>
-</View>
+        <TouchableOpacity onPress={deleteAssignment}>
+          <Ionicons name="trash-outline" size={22} color="#ef4444" />
+        </TouchableOpacity>
+      </View>
 
-
-      {/* Assignment Card */}
       <View
         style={[
           styles.card,
-          { backgroundColor: COLORS.card, borderColor: COLORS.border }
+          { backgroundColor: COLORS.card, borderColor: COLORS.border },
         ]}
       >
         <Text style={[styles.subjectName, { color: COLORS.muted }]}>
           {subject?.name}
         </Text>
+
         <Text style={[styles.title, { color: COLORS.text }]}>
           {assignment.title}
         </Text>
+
         <Text style={[styles.due, { color: COLORS.muted }]}>
           Due: {moment(assignment.due_date).format("DD MMM YYYY")}
         </Text>
       </View>
 
-      {/* Actions */}
       <View style={styles.actions}>
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: COLORS.primary }]}
           onPress={() =>
             router.push({
               pathname: "/(tabs)/assignments/mark-submissions",
-              params: { assignmentId }
+              params: { assignmentId },
             } as any)
           }
         >
@@ -150,7 +140,7 @@ export default function AssignmentDetails() {
           onPress={() =>
             router.push({
               pathname: "/(tabs)/assignments/view-submissions",
-              params: { assignmentId }
+              params: { assignmentId },
             } as any)
           }
         >
@@ -160,6 +150,86 @@ export default function AssignmentDetails() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {dialog && (
+        <View
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.55)",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              borderRadius: 26,
+              backgroundColor: COLORS.card,
+              padding: 26,
+              shadowColor: "#000",
+              shadowOpacity: 0.25,
+              shadowRadius: 30,
+              elevation: 18,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "800",
+                color: COLORS.text,
+                textAlign: "center",
+              }}
+            >
+              {dialog.title}
+            </Text>
+
+            <Text
+              style={{
+                fontSize: 15,
+                color: COLORS.muted,
+                textAlign: "center",
+                marginVertical: 20,
+              }}
+            >
+              {dialog.message}
+            </Text>
+
+            <View
+              style={{ flexDirection: "row", justifyContent: "flex-end", gap: 12 }}
+            >
+              <TouchableOpacity
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 18,
+                  borderRadius: 14,
+                  backgroundColor: COLORS.border,
+                }}
+                onPress={() => setDialog(null)}
+              >
+                <Text style={{ color: COLORS.text, fontWeight: "600" }}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 20,
+                  borderRadius: 14,
+                  backgroundColor: COLORS.accent,
+                }}
+                onPress={dialog.action}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700" }}>
+                  Delete
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -172,37 +242,40 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 30
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 40,
   },
+
   headerTitle: {
     fontSize: 18,
-    fontWeight: "700"
+    fontWeight: "700",
   },
 
   card: {
     padding: 24,
     borderRadius: 20,
     borderWidth: 1,
-    marginBottom: 40
+    marginBottom: 40,
   },
 
   subjectName: {
     fontSize: 14,
-    marginBottom: 6
+    marginBottom: 6,
   },
 
   title: {
     fontSize: 24,
     fontWeight: "700",
-    marginBottom: 10
+    marginBottom: 10,
   },
 
   due: {
-    fontSize: 14
+    fontSize: 14,
   },
 
   actions: {
-    gap: 16
+    gap: 16,
   },
 
   actionBtn: {
@@ -211,12 +284,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 18,
     borderRadius: 16,
-    gap: 10
+    gap: 10,
   },
 
   actionText: {
     color: "white",
     fontWeight: "700",
-    fontSize: 16
-  }
+    fontSize: 16,
+  },
 });

@@ -80,7 +80,8 @@ export default function Login() {
       borderColor: COLORS.border
     },
     btn: {
-      backgroundColor: COLORS.accent,
+      backgroundColor: "#22C55E",   // green only for login
+
       padding: 18,
       borderRadius: 14,
       marginTop: 6,

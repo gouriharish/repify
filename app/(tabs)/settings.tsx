@@ -63,7 +63,15 @@ export default function Settings() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
-  header: { padding: 24 },
+  header: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  paddingHorizontal: 20,
+  paddingBottom: 20,
+  paddingTop: 50,   // 👈 space at top for notch / status bar
+},
+
   title: { fontSize: 28, fontWeight: "bold" },
 
   list: { paddingHorizontal: 20 },

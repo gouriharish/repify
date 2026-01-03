@@ -148,11 +148,14 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20
-  },
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  paddingHorizontal: 20,
+  paddingBottom: 20,
+  paddingTop: 50,   // 👈 space at top for notch / status bar
+},
+
 
   headerTitle: {
     fontSize: 18,

@@ -152,11 +152,14 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20
-  },
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  paddingHorizontal: 20,
+  paddingBottom: 20,
+  paddingTop: 50,   // 👈 space at top for notch / status bar
+},
+
   headerTitle: {
     fontSize: 20,
     fontWeight: "700"
